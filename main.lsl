@@ -15,11 +15,11 @@
 // - Detects avatars in range
 // - Turns particles on when someone is nearby
 // - Gently bobs the prim up and down
-// - Fades back to idle when nobody is nearby
+// - Fades back to idle when nobody is nearby OR is interacting with the spot within the HIDE_RADIUS
 
 float DETECTION_RADIUS = 6.0;
-float DETECTION_ARC = PI;
-float SCAN_INTERVAL = 2.0;
+float HIDE_RADIUS = 1.2;
+float SCAN_INTERVAL = 0.25;
 
 float BOB_AMOUNT = 0.08;         // How far up/down it moves
 float BOB_SPEED = 0.8;           // Higher = faster bob
@@ -132,6 +132,33 @@ setActive(integer active)
     }
 }
 
+integer shouldBeActive()
+{
+    list agents = llGetAgentList(AGENT_LIST_REGION, []);
+    integer count = llGetListLength(agents);
+    integer i;
+    vector myPos = llGetPos();
+
+    for (i = 0; i < count; ++i)
+    {
+        key agent = llList2Key(agents, i);
+        list details = llGetObjectDetails(agent, [OBJECT_POS]);
+
+        if (llGetListLength(details) > 0)
+        {
+            vector agentPos = llList2Vector(details, 0);
+            float dist = llVecDist(myPos, agentPos);
+
+            if (dist >= HIDE_RADIUS && dist <= DETECTION_RADIUS)
+            {
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}
+
 default
 {
     state_entry()
@@ -144,8 +171,7 @@ default
         updateVisuals();
         stopParticles();
 
-        llSensorRepeat("", NULL_KEY, AGENT, DETECTION_RADIUS, DETECTION_ARC, SCAN_INTERVAL);
-        llSetTimerEvent(0.1);
+        llSetTimerEvent(SCAN_INTERVAL);
     }
 
     on_rez(integer start_param)
@@ -165,21 +191,17 @@ default
         }
     }
 
-    sensor(integer num_detected)
+    timer()
     {
-        if (num_detected > 0)
+        if (shouldBeActive())
         {
             setActive(TRUE);
         }
-    }
+        else
+        {
+            setActive(FALSE);
+        }
 
-    no_sensor()
-    {
-        setActive(FALSE);
-    }
-
-    timer()
-    {
         gBobPhase += 0.1 * BOB_SPEED;
         if (gBobPhase > TWO_PI)
         {
