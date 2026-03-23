@@ -1,4 +1,4 @@
-# ✨ hails.FaeLight
+# ✨ hails.Faelight
 
 A lightweight, reusable floating fairy-light marker for Second Life that highlights interactive spots using soft particles, motion, and color cycling.
 
