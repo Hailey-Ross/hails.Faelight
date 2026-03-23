@@ -19,13 +19,15 @@
 
 float DETECTION_RADIUS = 6.0;
 float HIDE_RADIUS = 1.2;
-float SCAN_INTERVAL = 0.25;
+float SCAN_INTERVAL = 0.75;
 
-float BOB_AMOUNT = 0.08;         // How far up/down it moves
-float BOB_SPEED = 0.8;           // Higher = faster bob
+float BOB_AMOUNT = 0.08;
+float BOB_SPEED = 0.8;
 
-float ACTIVE_ALPHA = 0.00;       // Visible when someone is nearby
-float IDLE_ALPHA = 0.00;         // visible when idle?
+float TWINKLE_SPEED = 1.2;
+
+float ACTIVE_ALPHA = 0.00;
+float IDLE_ALPHA = 0.00;
 
 float ACTIVE_GLOW = 0.00;
 float IDLE_GLOW = 0.00;
@@ -33,11 +35,39 @@ float IDLE_GLOW = 0.00;
 vector ACTIVE_COLOR = <1.000, 0.72, 0.86>;
 vector IDLE_COLOR   = <0.78, 0.88, 1.000>;
 
-string PARTICLE_TEXTURE = "";    // Set to texture name if you add one
+string PARTICLE_TEXTURE = "";
 
 integer gActive = FALSE;
 vector gBasePos;
 float gBobPhase = 0.0;
+float gTwinklePhase = 0.0;
+
+vector lerp(vector a, vector b, float t)
+{
+    return a + (b - a) * t;
+}
+
+vector getCycleColor(float phase)
+{
+    list colors = [
+        <1.000, 0.72, 0.86>,
+        <0.92, 0.70, 1.000>,
+        <0.72, 0.86, 1.000>,
+        <0.78, 1.000, 0.90>,
+        <1.000, 0.86, 0.76>
+    ];
+
+    integer count = llGetListLength(colors);
+    float wrapped = phase * (float)count;
+    integer indexA = (integer)wrapped;
+    float t = wrapped - (float)indexA;
+    integer indexB = (indexA + 1) % count;
+
+    vector colorA = llList2Vector(colors, indexA % count);
+    vector colorB = llList2Vector(colors, indexB);
+
+    return lerp(colorA, colorB, t);
+}
 
 updateVisuals()
 {
@@ -59,9 +89,16 @@ updateVisuals()
     }
 }
 
-list buildParticles()
+list buildParticles(float phase)
 {
     string texture = PARTICLE_TEXTURE;
+
+    float cycle = (llSin(phase) + 1.0) * 0.5;
+    vector startCol = getCycleColor(cycle);
+    vector endCol = lerp(startCol, <0.78, 0.52, 0.70>, 0.20);
+
+    float alpha = 0.3 + (0.18 * cycle);
+    float size = 0.07 + (0.03 * cycle);
 
     return [
         PSYS_PART_FLAGS,
@@ -74,19 +111,19 @@ list buildParticles()
 
         PSYS_SRC_TEXTURE, texture,
 
-        PSYS_PART_START_COLOR, <1.000, 0.76, 0.88>,
-        PSYS_PART_END_COLOR,   <0.80, 0.90, 1.000>,
+        PSYS_PART_START_COLOR, startCol,
+        PSYS_PART_END_COLOR, endCol,
 
-        PSYS_PART_START_ALPHA, 0.30,
-        PSYS_PART_END_ALPHA,   0.00,
+        PSYS_PART_START_ALPHA, alpha,
+        PSYS_PART_END_ALPHA, 0.00,
 
-        PSYS_PART_START_SCALE, <0.08, 0.08, 0.0>,
-        PSYS_PART_END_SCALE,   <0.02, 0.02, 0.0>,
+        PSYS_PART_START_SCALE, <size, size, 0.0>,
+        PSYS_PART_END_SCALE, <0.02, 0.02, 0.0>,
 
-        PSYS_PART_MAX_AGE, 2.4,
+        PSYS_PART_MAX_AGE, 2.0,
 
-        PSYS_SRC_BURST_PART_COUNT, 3,
-        PSYS_SRC_BURST_RATE, 0.18,
+        PSYS_SRC_BURST_PART_COUNT, 2,
+        PSYS_SRC_BURST_RATE, 0.15,
 
         PSYS_SRC_ACCEL, <0.0, 0.0, 0.03>,
         PSYS_SRC_BURST_SPEED_MIN, 0.01,
@@ -102,9 +139,9 @@ list buildParticles()
     ];
 }
 
-startParticles()
+setParticles(float phase)
 {
-    llParticleSystem(buildParticles());
+    llParticleSystem(buildParticles(phase));
 }
 
 stopParticles()
@@ -122,41 +159,10 @@ setActive(integer active)
     gActive = active;
     updateVisuals();
 
-    if (gActive)
-    {
-        startParticles();
-    }
-    else
+    if (!gActive)
     {
         stopParticles();
     }
-}
-
-integer shouldBeActive()
-{
-    list agents = llGetAgentList(AGENT_LIST_REGION, []);
-    integer count = llGetListLength(agents);
-    integer i;
-    vector myPos = llGetPos();
-
-    for (i = 0; i < count; ++i)
-    {
-        key agent = llList2Key(agents, i);
-        list details = llGetObjectDetails(agent, [OBJECT_POS]);
-
-        if (llGetListLength(details) > 0)
-        {
-            vector agentPos = llList2Vector(details, 0);
-            float dist = llVecDist(myPos, agentPos);
-
-            if (dist >= HIDE_RADIUS && dist <= DETECTION_RADIUS)
-            {
-                return TRUE;
-            }
-        }
-    }
-
-    return FALSE;
 }
 
 default
@@ -171,6 +177,7 @@ default
         updateVisuals();
         stopParticles();
 
+        llSensorRepeat("", NULL_KEY, AGENT, DETECTION_RADIUS, PI, SCAN_INTERVAL);
         llSetTimerEvent(SCAN_INTERVAL);
     }
 
@@ -191,17 +198,34 @@ default
         }
     }
 
-    timer()
+    sensor(integer num_detected)
     {
-        if (shouldBeActive())
+        integer i;
+        integer shouldActivate = FALSE;
+        vector myPos = llGetPos();
+
+        for (i = 0; i < num_detected; ++i)
         {
-            setActive(TRUE);
-        }
-        else
-        {
-            setActive(FALSE);
+            float dist = llVecDist(myPos, llDetectedPos(i));
+
+            if (dist >= HIDE_RADIUS && dist <= DETECTION_RADIUS)
+            {
+                shouldActivate = TRUE;
+                jump done;
+            }
         }
 
+@done;
+        setActive(shouldActivate);
+    }
+
+    no_sensor()
+    {
+        setActive(FALSE);
+    }
+
+    timer()
+    {
         gBobPhase += 0.1 * BOB_SPEED;
         if (gBobPhase > TWO_PI)
         {
@@ -214,5 +238,16 @@ default
         llSetLinkPrimitiveParamsFast(LINK_THIS, [
             PRIM_POS_LOCAL, pos
         ]);
+
+        if (gActive)
+        {
+            gTwinklePhase += SCAN_INTERVAL * TWINKLE_SPEED;
+            if (gTwinklePhase > TWO_PI)
+            {
+                gTwinklePhase -= TWO_PI;
+            }
+
+            setParticles(gTwinklePhase);
+        }
     }
 }
