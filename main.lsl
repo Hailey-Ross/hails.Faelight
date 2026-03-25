@@ -18,13 +18,13 @@
 // - Fades back to idle when nobody is nearby OR is interacting with the spot within the HIDE_RADIUS
 
 float DETECTION_RADIUS = 6.0;
-float HIDE_RADIUS = 1.2;
+float HIDE_RADIUS = 1.0;
 float SCAN_INTERVAL = 0.75;
 
-float BOB_AMOUNT = 0.08;
+float BOB_AMOUNT = 0.03;
 float BOB_SPEED = 0.8;
 
-float TWINKLE_SPEED = 1.2;
+float TWINKLE_SPEED = 1.3;
 
 float ACTIVE_ALPHA = 0.00;
 float IDLE_ALPHA = 0.00;
@@ -97,8 +97,8 @@ list buildParticles(float phase)
     vector startCol = getCycleColor(cycle);
     vector endCol = lerp(startCol, <0.70, 0.60, 0.82>, 0.35);
 
-    float alpha = 0.18 + (0.17 * cycle);
-    float size = 0.09 + (0.05 * cycle);
+    float alpha = 0.35 + (0.17 * cycle);
+    float size = 0.098 + (0.05 * cycle);
 
     return [
         PSYS_PART_FLAGS,
