@@ -51,10 +51,10 @@ vector getCycleColor(float phase)
 {
     list colors = [
         <1.000, 0.72, 0.86>,
-        <0.92, 0.70, 1.000>,
-        <0.72, 0.86, 1.000>,
-        <0.78, 1.000, 0.90>,
-        <1.000, 0.86, 0.76>
+        <0.86, 0.74, 1.000>,
+        <0.78, 0.88, 1.000>,
+        <0.82, 1.000, 0.92>,
+        <1.000, 0.90, 0.78>
     ];
 
     integer count = llGetListLength(colors);
@@ -95,10 +95,10 @@ list buildParticles(float phase)
 
     float cycle = (llSin(phase) + 1.0) * 0.5;
     vector startCol = getCycleColor(cycle);
-    vector endCol = lerp(startCol, <0.78, 0.52, 0.70>, 0.20);
+    vector endCol = lerp(startCol, <0.70, 0.60, 0.82>, 0.35);
 
-    float alpha = 0.3 + (0.18 * cycle);
-    float size = 0.07 + (0.03 * cycle);
+    float alpha = 0.18 + (0.17 * cycle);
+    float size = 0.09 + (0.05 * cycle);
 
     return [
         PSYS_PART_FLAGS,
@@ -120,7 +120,7 @@ list buildParticles(float phase)
         PSYS_PART_START_SCALE, <size, size, 0.0>,
         PSYS_PART_END_SCALE, <0.02, 0.02, 0.0>,
 
-        PSYS_PART_MAX_AGE, 2.0,
+        PSYS_PART_MAX_AGE, 3.3,
 
         PSYS_SRC_BURST_PART_COUNT, 2,
         PSYS_SRC_BURST_RATE, 0.15,
@@ -165,6 +165,33 @@ setActive(integer active)
     }
 }
 
+integer shouldBeActive()
+{
+    list agents = llGetAgentList(AGENT_LIST_REGION, []);
+    integer count = llGetListLength(agents);
+    integer i;
+    vector myPos = llGetPos();
+
+    for (i = 0; i < count; ++i)
+    {
+        key agent = llList2Key(agents, i);
+        list details = llGetObjectDetails(agent, [OBJECT_POS]);
+
+        if (llGetListLength(details) > 0)
+        {
+            vector agentPos = llList2Vector(details, 0);
+            float dist = llVecDist(myPos, agentPos);
+
+            if (dist >= HIDE_RADIUS && dist <= DETECTION_RADIUS)
+            {
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}
+
 default
 {
     state_entry()
@@ -177,7 +204,6 @@ default
         updateVisuals();
         stopParticles();
 
-        llSensorRepeat("", NULL_KEY, AGENT, DETECTION_RADIUS, PI, SCAN_INTERVAL);
         llSetTimerEvent(SCAN_INTERVAL);
     }
 
@@ -198,49 +224,30 @@ default
         }
     }
 
-    sensor(integer num_detected)
-    {
-        integer i;
-        integer shouldActivate = FALSE;
-        vector myPos = llGetPos();
-
-        for (i = 0; i < num_detected; ++i)
-        {
-            float dist = llVecDist(myPos, llDetectedPos(i));
-
-            if (dist >= HIDE_RADIUS && dist <= DETECTION_RADIUS)
-            {
-                shouldActivate = TRUE;
-                jump done;
-            }
-        }
-
-@done;
-        setActive(shouldActivate);
-    }
-
-    no_sensor()
-    {
-        setActive(FALSE);
-    }
-
     timer()
     {
-        gBobPhase += 0.1 * BOB_SPEED;
-        if (gBobPhase > TWO_PI)
+        if (shouldBeActive())
         {
-            gBobPhase -= TWO_PI;
+            setActive(TRUE);
+        }
+        else
+        {
+            setActive(FALSE);
         }
 
-        float offset = llSin(gBobPhase) * BOB_AMOUNT;
-        vector pos = gBasePos + <0.0, 0.0, offset>;
-
-        llSetLinkPrimitiveParamsFast(LINK_THIS, [
-            PRIM_POS_LOCAL, pos
-        ]);
+        vector pos;
 
         if (gActive)
         {
+            gBobPhase += 0.1 * BOB_SPEED;
+            if (gBobPhase > TWO_PI)
+            {
+                gBobPhase -= TWO_PI;
+            }
+
+            float offset = llSin(gBobPhase) * BOB_AMOUNT;
+            pos = gBasePos + <0.0, 0.0, offset>;
+
             gTwinklePhase += SCAN_INTERVAL * TWINKLE_SPEED;
             if (gTwinklePhase > TWO_PI)
             {
@@ -249,5 +256,19 @@ default
 
             setParticles(gTwinklePhase);
         }
+        else
+        {
+            vector currentPos = llGetLocalPos();
+            pos = currentPos + ((gBasePos - currentPos) * 0.25);
+
+            if (llVecDist(pos, gBasePos) < 0.001)
+            {
+                pos = gBasePos;
+            }
+        }
+
+        llSetLinkPrimitiveParamsFast(LINK_THIS, [
+            PRIM_POS_LOCAL, pos
+        ]);
     }
 }
