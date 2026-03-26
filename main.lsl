@@ -120,7 +120,7 @@ list buildParticles(float phase)
         PSYS_PART_START_SCALE, <size, size, 0.0>,
         PSYS_PART_END_SCALE, <0.02, 0.02, 0.0>,
 
-        PSYS_PART_MAX_AGE, 3.3,
+        PSYS_PART_MAX_AGE, 3.9,
 
         PSYS_SRC_BURST_PART_COUNT, 2,
         PSYS_SRC_BURST_RATE, 0.15,
