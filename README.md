@@ -120,10 +120,9 @@ If left blank, the default particle is used.
 ## 🧩 Recommended Prim Setup
 
 - Shape: Sphere  
-- Size: Small such as `0.10 x 0.10 x 0.10`  
-- Full Bright: Enabled  
+- Size: Small such as `0.10 x 0.10 x 0.10`    
 - Glow: Optional and subtle  
-- Transparency: Adjust based on preference  
+- Transparency: Full Transparency  
 
 ---
 
