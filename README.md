@@ -1,4 +1,4 @@
-# ✨ hails.Faelight
+# hails.Faelight
 
 A lightweight, reusable floating fairy-light marker for Second Life that highlights interactive spots using soft particles, motion, and color cycling.
 
@@ -6,7 +6,7 @@ Designed to draw attention without breaking immersion.
 
 ---
 
-## 🌸 Features
+## Features
 
 - Proximity-based activation using `llSensorRepeat`
 - Automatically hides when avatars are too close
@@ -17,7 +17,7 @@ Designed to draw attention without breaking immersion.
 
 ---
 
-## 🌈 Visual Behavior
+## Visual Behavior
 
 - Appears when an avatar is within range
 - Disappears when the avatar is very close to the interaction spot
@@ -26,7 +26,7 @@ Designed to draw attention without breaking immersion.
 
 ---
 
-## 📦 Installation
+## Installation
 
 1. Rez a small prim where you want to highlight an interaction spot  
 2. Drop the script into the prim  
@@ -35,7 +35,7 @@ Designed to draw attention without breaking immersion.
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 All key settings are located at the top of the script:
 
@@ -87,7 +87,7 @@ Controls how quickly the color cycle and pulse effect runs.
 
 ---
 
-## 🎨 Color System
+## Color System
 
 The marker cycles through a palette of complementary colors designed to stand out in different environments.
 
@@ -105,7 +105,7 @@ You can customize this list to match your sim theme.
 
 ---
 
-## ✨ Particle Settings
+## Particle Settings
 
 ```lsl
 string PARTICLE_TEXTURE = "";
@@ -117,7 +117,7 @@ If left blank, the default particle is used.
 
 ---
 
-## 🧩 Recommended Prim Setup
+## Recommended Prim Setup
 
 - Shape: Sphere  
 - Size: Small such as `0.10 x 0.10 x 0.10`    
@@ -126,7 +126,7 @@ If left blank, the default particle is used.
 
 ---
 
-## 💡 Usage Tips
+## Usage Tips
 
 - Place slightly above or in front of the interaction area  
 - Avoid placing directly inside dense meshes where particles may clip  
@@ -139,7 +139,7 @@ If left blank, the default particle is used.
 
 ---
 
-## 🔧 Performance Notes
+## Performance Notes
 
 - Uses `llSensorRepeat` for efficient nearby avatar detection  
 - Avoids scanning the entire region  
@@ -147,6 +147,6 @@ If left blank, the default particle is used.
 
 ---
 
-## 📜 License
+## License
 
 Please retain all credits and comments within the script.
